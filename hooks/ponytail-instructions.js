@@ -12,9 +12,21 @@ function filterSkillBodyForMode(body, mode) {
   const effectiveMode = normalizeMode(mode) || DEFAULT_MODE;
   const withoutFrontmatter = String(body || '').replace(/^---[\s\S]*?---\s*/, '');
 
+  // Per-mode filtering only applies inside the Intensity section, where the
+  // level table and the worked examples live. Anywhere else, a `- label: ...`
+  // bullet is a normal rule (e.g. "No unrequested abstractions: ...") and must
+  // be kept verbatim.
+  let inIntensity = false;
   return withoutFrontmatter
     .split(/\r?\n/)
     .filter((line) => {
+      const heading = line.match(/^##\s+(.+?)\s*$/);
+      if (heading) {
+        inIntensity = heading[1].trim().toLowerCase() === 'intensity';
+        return true;
+      }
+      if (!inIntensity) return true;
+
       const tableMatch = line.match(/^\|\s*\*\*(.+?)\*\*\s*\|/);
       if (tableMatch) return tableMatch[1].trim() === effectiveMode;
 
